@@ -3,6 +3,14 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 .kotlin
+# Ignore all PNG images (test inputs and outputs)
+*.png
+
+# Ignore IDE settings
+.idea/
+*.iml
+
+# Ignore compiled Java classes
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
