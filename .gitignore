@@ -5,6 +5,9 @@ target/
 .kotlin
 # Ignore all PNG images (test inputs and outputs)
 *.png
+*.jpg
+*.pdf
+*.mp3
 
 # Ignore IDE settings
 .idea/
