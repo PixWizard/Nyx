@@ -5,6 +5,7 @@ import org.ghost.crypto.CipherManager;
 import org.ghost.utils.ImageManager;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import javax.crypto.BadPaddingException;
 
 public class Main {
@@ -24,17 +25,24 @@ public class Main {
             System.out.println("Encrypting and hiding message...");
             String encryptedMessage = CipherManager.encrypt(secret, password);
 
-            engine.cloak(original, encryptedMessage);
+            byte[] encryptedBytes = encryptedMessage.getBytes();
+            byte[] dataToHide = new byte[encryptedBytes.length + 1];
+            System.arraycopy(encryptedBytes, 0, dataToHide, 0, encryptedBytes.length);
+            dataToHide[dataToHide.length - 1] = 0; //Adding extra 0 for the encryption to know when to stop
+            //Base64, reveal issue -I14
+
+            engine.cloak(original, dataToHide);
             ImageManager.saveImage(original, "output.png");
             System.out.println("Success! Ghost image saved as 'output.png'");
 
             // --- REVEAL & DECRYPTION ---
             System.out.println("\nTesting Reveal from 'output.png'...");
             BufferedImage ghostImage = ImageManager.loadImage("output.png");
-            String revealed = engine.reveal(ghostImage);
+            byte[] revealed = engine.reveal(ghostImage);
+            String revealedString = new String(revealed);
 
             // Decrypting using the password
-            String finalDecrypted = CipherManager.decrypt(revealed, password);
+            String finalDecrypted = CipherManager.decrypt(revealedString, password);
             System.out.println("Final Decrypted Message: " + finalDecrypted);
 
             // --- UNCOMMENT BELOW TO TEST THE WRONG PASSWORD ---
