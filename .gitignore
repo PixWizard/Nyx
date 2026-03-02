@@ -8,6 +8,7 @@ target/
 *.jpg
 *.pdf
 *.mp3
+*.txt
 
 # Ignore IDE settings
 .idea/

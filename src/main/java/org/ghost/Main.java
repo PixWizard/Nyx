@@ -8,14 +8,23 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import javax.crypto.BadPaddingException;
 
+//For files
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 public class Main {
     public static void main(String[] args) {
         SteganoEngine engine = new SteganoEngine();
 
         try {
             // --- SETTINGS ---
+            Path filePath = Paths.get("C:\\Projects\\ghost\\ghost\\demo.txt");
+            byte[] fileBytes = Files.readAllBytes(filePath);
+            System.out.println("Original File Size: " + fileBytes.length + " bytes");
+
             String password = "GhostProtocol123";
-            String secret = "Nyx Project: Ghost Protocol Active";
+//            String secret = new String(fileBytes, StandardCharsets.UTF_8);
             String imagePath = "C:\\Projects\\ghost\\ghost\\TestInput.png";
 
             // --- ENCRYPTION & CLOAKING ---
@@ -23,11 +32,11 @@ public class Main {
             BufferedImage original = ImageManager.loadImage(imagePath);
 
             System.out.println("Encrypting and hiding message...");
-            String encryptedMessage = CipherManager.encrypt(secret, password);
+            byte[] encryptedMessage = CipherManager.encrypt(fileBytes, password);
 
             //No need for array copying.Since the data termination is fixed by introducing the header.
 
-            engine.cloak(original, encryptedMessage.getBytes(StandardCharsets.UTF_8));
+            engine.cloak(original, encryptedMessage);
             ImageManager.saveImage(original, "output.png");
             System.out.println("Success! Ghost image saved as 'output.png'");
 
@@ -35,11 +44,12 @@ public class Main {
             System.out.println("\nTesting Reveal from 'output.png'...");
             BufferedImage ghostImage = ImageManager.loadImage("output.png");
             byte[] revealed = engine.reveal(ghostImage);
-            String revealedString = new String(revealed);
 
             // Decrypting using the password
-            String finalDecrypted = CipherManager.decrypt(revealedString, password);
-            System.out.println("Final Decrypted Message: " + finalDecrypted);
+            byte[] finalDecrypted = CipherManager.decrypt(revealed, password);
+            System.out.println("DEBUG: Final Decrypted Length: " + finalDecrypted.length);
+            Files.write(Paths.get("C:\\Projects\\ghost\\ghost\\Secrets.txt"), finalDecrypted);
+            System.out.println("File restored!!..'Secrets.txt'");
 
             // --- UNCOMMENT BELOW TO TEST THE WRONG PASSWORD ---
             /*
