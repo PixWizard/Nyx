@@ -25,13 +25,9 @@ public class Main {
             System.out.println("Encrypting and hiding message...");
             String encryptedMessage = CipherManager.encrypt(secret, password);
 
-            byte[] encryptedBytes = encryptedMessage.getBytes();
-            byte[] dataToHide = new byte[encryptedBytes.length + 1];
-            System.arraycopy(encryptedBytes, 0, dataToHide, 0, encryptedBytes.length);
-            dataToHide[dataToHide.length - 1] = 0; //Adding extra 0 for the encryption to know when to stop
-            //Base64, reveal issue -I14
+            //No need for array copying.Since the data termination is fixed by introducing the header.
 
-            engine.cloak(original, dataToHide);
+            engine.cloak(original, encryptedMessage.getBytes(StandardCharsets.UTF_8));
             ImageManager.saveImage(original, "output.png");
             System.out.println("Success! Ghost image saved as 'output.png'");
 
