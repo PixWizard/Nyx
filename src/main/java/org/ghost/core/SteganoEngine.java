@@ -1,7 +1,7 @@
 package org.ghost.core;
 
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
+//import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 
 public class SteganoEngine {
@@ -15,40 +15,38 @@ public class SteganoEngine {
 
 //      Storing the size of the data in the first 4 byte of the file (32bits for the dataLength)- >I15(RES)
         byte[] header = ByteBuffer.allocate(4).putInt(data.length).array();
-
         byte[] totalData = new byte[header.length + data.length]; //stored in the form of bytes
 
 //      TOTAL LEN = DATA LEN + 4BYTE HEADER FOR DATA LENGTH
         System.arraycopy(header, 0, totalData, 0, header.length);
         System.arraycopy(data, 0, totalData, header.length, data.length);
 
-//        No longer needed as data is processed in Byte stream ->I15
-//        byte[] data = (message + "\0").getBytes(); //Terminating the message using Null character
+//      Getting all the pixels into a Buffer for faster modification.
+        int[] pixelBuffer = new int[width * height];
+        image.getRGB(0, 0, width, height, pixelBuffer, 0, width); //Loading the image to the matrix
 
-        for(int y=0; y<height; ++y) {
-            for(int x=0; x<width; ++x) {
+        for (int i = 0; i < pixelBuffer.length; ++i) {
 
-                int pixel = image.getRGB(x, y); //Extracting the pixel
+            int pixel = pixelBuffer[i]; //Extracting the pixel
 
-//              Bit Modification -->
-                int bitToHide = (totalData[byteIndex] >> (7-bitIndex)) & 1;
+//          Bit Modification -->
+            int bitToHide = (totalData[byteIndex] >> (7 - bitIndex)) & 1;
 
-                int clearedPixel = pixel & 0xFFFEFFFF;
-                int newPixel = clearedPixel | (bitToHide << 16);
+            int clearedPixel = pixel & 0xFFFEFFFF;
+            pixelBuffer[i] = clearedPixel | (bitToHide << 16);
 
-                //Saving the pixel
-                image.setRGB(x, y, newPixel);
-
-                bitIndex++;
-                if (bitIndex == 8) {
-                    bitIndex = 0;
-                    byteIndex++;
-                }
-                if (byteIndex >= totalData.length) {
-                    return;
-                }
+            bitIndex++;
+            if (bitIndex == 8) {
+                bitIndex = 0;
+                byteIndex++;
+            }
+            if (byteIndex >= totalData.length) {
+                break;
             }
         }
+        //Saving the pixel at the end--> v3
+        image.setRGB(0, 0, width, height, pixelBuffer, 0, width);
+
     }
 
 //    RETRIEVAL OF DATA
@@ -63,21 +61,22 @@ public class SteganoEngine {
         int currentByte = 0;
         int bitCount = 0;
         int headerIndex = 0;
-        int x = 0, y = 0;
+        int i = 0;
 
-        outer : for(y=0; y<height; ++y) {
-            for(x=0; x<width; ++x) {
-                int pixel =  image.getRGB(x, y);
-                int bit  = (pixel >> 16) & 1;
-                currentByte = (currentByte << 1) | bit;
-                bitCount++;
+        int[] pixelBuffer = new int[height * width];
+        image.getRGB(0, 0, width, height, pixelBuffer, 0, width);
 
-                if(bitCount == 8) {
-                    header[headerIndex++] = (byte) currentByte;
-                    currentByte = 0;
-                    bitCount = 0;
-                    if(headerIndex == 4) break outer;
-                }
+//      Loop for getting the header and traversing till the bit of the actual data.
+        for(; i<32; ++i) {
+            int pixel =  pixelBuffer[i];
+            int bit  = (pixel >> 16) & 1;
+            currentByte = (currentByte << 1) | bit;
+            bitCount++;
+
+            if(bitCount == 8) {
+                header[headerIndex++] = (byte) currentByte;
+                currentByte = 0;
+                bitCount = 0;
             }
         }
 
@@ -85,36 +84,26 @@ public class SteganoEngine {
         byte[] data = new byte[dataLength];
 
         int dataIndex = 0;
-        x++;
-        if (x >= width) {
-            x = 0;
-            y++;
-        }
 
-        for(; y<height; ++y) {
+        for(; i<pixelBuffer.length; ++i) {
+            int pixel = pixelBuffer[i];
+            int bit = (pixel >> 16) & 1;
 
-            for(; x<width; ++x) {
+            currentByte = (currentByte << 1) | bit;
+            bitCount++;
 
-                int pixel = image.getRGB(x, y);
-                int bit = (pixel >> 16) & 1;
+            if (bitCount == 8) {
 
-                currentByte = (currentByte << 1) | bit;
-                bitCount++;
+                data[dataIndex++] = (byte) currentByte;
 
-                if (bitCount == 8) {
-
-                    if (dataIndex == dataLength) {
-                        return data;
-                    }
-
-                    data[dataIndex++] = (byte) currentByte;
-
-                    // Reset for the next character
-                    currentByte = 0;
-                    bitCount = 0;
+                if (dataIndex == dataLength) {
+                    return data;
                 }
+
+                // Reset for the next character
+                currentByte = 0;
+                bitCount = 0;
             }
-            x = 0; //resetting for next row
         }
         return data;
     }
