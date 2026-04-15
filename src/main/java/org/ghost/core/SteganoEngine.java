@@ -1,21 +1,27 @@
 package org.ghost.core;
 
 import java.awt.image.BufferedImage;
-//import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 
-public class SteganoEngine {
+public class SteganoEngine extends AbstractSteganoEngine{
+
+    @Override
+    public int getBitsPerPixel() {
+        return 3; //For providing the Bit hiding logic.
+    }
 
     //  HIDING OF THE DATA -->
+    @Override
     public void cloak(BufferedImage image, byte[] data) {
 
+        //Getting the dimensions of image
         int width = image.getWidth();
         int height = image.getHeight();
 
         int byteIndex = 0;
         int bitIndex = 0;
 
-//      Storing the size of the data in the first 4 byte of the file (32bits for the dataLength)- >I15(RES)
+//      Storing the size of the data in the first 4 byte of the file (32bits for the dataLength)
         byte[] header = ByteBuffer.allocate(4).putInt(data.length).array();
         byte[] totalData = new byte[header.length + data.length]; //stored in the form of bytes
 
@@ -24,10 +30,9 @@ public class SteganoEngine {
         System.arraycopy(data, 0, totalData, header.length, data.length);
 
 //      Getting all the pixels into a Buffer for faster modification.
-        int[] pixelBuffer = new int[width * height];
-        image.getRGB(0, 0, width, height, pixelBuffer, 0, width);
+        int[] pixelBuffer = getImage(image); //Using the abstraction.
 
-//      For LSB's of RGB.
+//      For LSB's of RGB for shifting bits.
         int[] shifts = {16,8,0};
 
         for (int i = 0; i < pixelBuffer.length; ++i) {
@@ -37,6 +42,7 @@ public class SteganoEngine {
 //          Bit Modification -->
             pixel = pixel & 0xFFFEFEFE; //Masking the required bits to 0.
 
+            //Loop for shifts maintains the record of the data read.
             for (int shift : shifts) {
                 int bitToHide = (totalData[byteIndex] >> (7 - bitIndex)) & 1;
                 pixel = pixel | (bitToHide << shift);
@@ -59,6 +65,7 @@ public class SteganoEngine {
     }
 
     //  RETRIEVAL OF DATA -->
+    @Override
     public byte[] reveal(BufferedImage image) {
 
         int width = image.getWidth();
