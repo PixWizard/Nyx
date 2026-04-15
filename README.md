@@ -11,6 +11,7 @@ Nyx is a lightweight, high-performance steganography tool built in Java. It allo
 * **Triple-Channel Logic:** Most tools only use one color channel. Nyx uses Red, Green, and Blue simultaneously to maximize storage space.
 * **Built-in Security:** Your data is automatically encrypted with **AES-256** before it's hidden. Even if someone finds the data, they can't read it without your password.
 * **Pixel-Perfect:** Designed to keep the "Ghost" image looking identical to the original, even under close inspection.
+* **Bit-Perfect Integrity:** Nyx ensures **100% Zero-Loss Reconstruction**. By operating on raw pixel buffers, the engine guarantees that the extracted file is a bit-for-bit match of the original, with no corruption or data loss.
 
 ---
 
