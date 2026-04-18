@@ -4,6 +4,7 @@ import org.ghost.core.SteganoEngine;
 import org.ghost.core.SteganoProtocol;
 
 //Encryption and decryption
+import org.ghost.crypto.CipherProtocol;
 import org.ghost.crypto.CipherManager;
 
 //Error handling
@@ -13,6 +14,7 @@ import javax.crypto.BadPaddingException;
 //Image managers
 import org.ghost.utils.ImageManager;
 import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
 
 //For files
 import java.nio.file.Files;
@@ -25,9 +27,13 @@ public class Main {
 
         SteganoProtocol engine = new SteganoEngine(); //for streamling protocol.
 
+        //Polymorphism: CipherProtocol reference holds a CipherManager instance.
+     
+        CipherProtocol cipher = new CipherManager();
+
         try {
             // Path of the file to hide.
-            Path filePath = Paths.get("C:\\Projects\\ghost\\ghost\\TestPDF.pdf");
+            Path filePath = Paths.get("D:\\ghost\\Ghost\\sample.txt");
 
             // Storing the metadata regarding the extension.
             String fileName = filePath.getFileName().toString();
@@ -45,7 +51,7 @@ public class Main {
             String password = "GhostProtocol123";
 
             //Path of the Image which will act as a carrier.
-            String imagePath = "C:\\Projects\\ghost\\ghost\\CarrierImg.png";
+            String imagePath = "D:\\ghost\\Ghost\\hiding image.jpg";
 
             System.out.println("Loading image...");
             //Loading the carrier image.
@@ -67,7 +73,7 @@ public class Main {
 
             System.out.println("Encrypting and hiding message...");
             //Encrypting the data before the actual hiding.
-            byte[] encryptedMessage = CipherManager.encrypt(fileBytes, password);
+            byte[] encryptedMessage = cipher.encrypt(fileBytes, password);
 
 //            long startCloak = System.nanoTime();
             //hiding the encrypted data in the carrier.
@@ -75,14 +81,17 @@ public class Main {
 //            long endCloak = System.nanoTime();
 
             //saving the image.
-            ImageManager.saveImage(original, "output.png");
-            System.out.println("Success! Ghost image saved as 'output.png'");
+            String outputPath = "D:\\ghost\\Ghost\\output.png";
+            ImageIO.scanForPlugins(); //Ensures PNG writer SPI is found when running via module-path.
+            ImageManager.saveImage(original, outputPath);
+            System.out.println("Success! Ghost image saved as '" + outputPath + "'");
 
 
             // --- REVEAL & DECRYPTION ---
 
-            System.out.println("\nTesting Reveal from 'output.png'...");
-            BufferedImage ghostImage = ImageManager.loadImage("output.png");
+            System.out.println("\nTesting Reveal from '" + outputPath + "'...");
+            BufferedImage ghostImage = ImageManager.loadImage(outputPath);
+            if (ghostImage == null) throw new IOException("ImageIO could not read the output PNG. File may be corrupt or empty.");
 
 //            long startReveal = System.nanoTime();
             byte[] revealed = engine.reveal(ghostImage);
@@ -90,15 +99,16 @@ public class Main {
 //            long endReveal = System.nanoTime();
 
             // Decrypting using the password.
-            byte[] finalDecrypted = CipherManager.decrypt(revealed, password);
+            byte[] finalDecrypted = cipher.decrypt(revealed, password);
 
             String op_filename = "Restored_file" + extension;
-            Files.write(Paths.get("C:\\Projects\\ghost\\ghost\\" + op_filename), finalDecrypted);
-            System.out.println("File restored!!..'" +  op_filename + "'");
+            Path restoredPath = Paths.get("D:\\ghost\\Ghost\\", op_filename);
+            Files.write(restoredPath, finalDecrypted);
+            System.out.println("File restored!!...'" + restoredPath + "'");
 
 
         } catch (IOException e) {
-            System.err.println("[FILE ERROR]: Could not find or save the image. Check your file paths.");
+            System.err.println("[FILE ERROR]: " + e.getMessage());
         } catch (BadPaddingException e) {
             System.err.println("[SECURITY ALERT]: Incorrect password! Decryption failed.");
         } catch (Exception e) {
