@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Scanner;
 
 public class Main {
@@ -24,135 +25,145 @@ public class Main {
 
         printHeader();
 
+        System.out.println("Select Operation Mode:");
+        System.out.println("[1] Encrypt & Hide (Cloak)");
+        System.out.println("[2] Reveal & Decrypt (Uncloak)");
+        System.out.print("Choice (1/2): ");
+        String mode = scanner.nextLine().trim();
+
         try {
-            // 1. Secret File Path
-            System.out.print("Enter path of the file to hide (e.g., sample.txt): ");
-            String filePathStr = scanner.nextLine().trim().replace("\"", "");
-            Path filePath = Paths.get(filePathStr);
-
-            if (!Files.exists(filePath)) {
-                System.err.println("ERROR: Secret file not found at: " + filePathStr);
-                return;
+            if (mode.equals("1")) {
+                handleEncryptionFlow(scanner, engine, cipher);
+            } else if (mode.equals("2")) {
+                handleDecryptionFlow(scanner, engine, cipher);
+            } else {
+                System.out.println("Invalid selection. Exiting...");
             }
-
-            // Storing the metadata regarding the extension.
-            String fileName = filePath.getFileName().toString();
-            int lastDot = fileName.lastIndexOf(".");
-            if (lastDot == -1) {
-                System.err.println("ERROR: File must have an extension!");
-                return;
-            }
-            String extension = fileName.substring(lastDot);
-
-            byte[] fileBytes = Files.readAllBytes(filePath);
-
-            // 2. Encryption Password
-            System.out.print("Enter password for encryption: ");
-            String password = scanner.nextLine();
-            if (password.isEmpty()) {
-                System.out.println("No password entered. Using default: 'GhostProtocol123'");
-                password = "GhostProtocol123";
-            }
-
-            // 3. Carrier Image Selection
-            System.out.println("\n--- Carrier Image Selection ---");
-            System.out.println("[1] Provide your own carrier image path");
-            System.out.println("[2] Auto-fetch from Unsplash (Recommended)");
-            System.out.print("Choose option (1/2): ");
-            String choice = scanner.nextLine().trim();
-
-            BufferedImage original = null;
-            String imagePathToSave = "carrier_image.jpg"; // Default path for auto-fetched or copy
-
-            long requiredPixels = ((long) fileBytes.length * 8 + 32);
-
-            if (choice.equals("2")) {
-                try {
-                    original = UnsplashClient.fetchCarrierImage(requiredPixels, imagePathToSave);
-                } catch (IllegalStateException e) {
-                    System.err.println("\n" + e.getMessage());
-                    System.out.println("Falling back to manual path entry...");
-                    choice = "1";
-                }
-            }
-
-            if (choice.equals("1")) {
-                System.out.print("Enter path of the carrier image: ");
-                String imagePathStr = scanner.nextLine().trim().replace("\"", "");
-                original = ImageManager.loadImage(imagePathStr);
-            }
-
-            if (original == null) {
-                System.err.println("ERROR: No carrier image loaded. Process aborted.");
-                return;
-            }
-
-            // Size compatibility check.
-            long totalPixels = (long) original.getWidth() * original.getHeight();
-            long availableBits = totalPixels * 3; // 3 bits per pixel
-
-            if (requiredPixels > availableBits) {
-                System.err.println("\nERROR: Secret file is too large for this carrier image!");
-                System.err.println("Required bits: " + requiredPixels);
-                System.err.println("Available bits: " + availableBits);
-                return;
-            }
-
-            // --- ENCRYPTION & CLOAKING ---
-            System.out.println("\n--- Processing ---");
-            System.out.print("Encrypting and hiding message... ");
-            byte[] encryptedMessage = cipher.encrypt(fileBytes, password);
-            engine.cloak(original, encryptedMessage);
-            System.out.println("Done!");
-
-            // Saving the output image.
-            System.out.print("Enter name for output image (default: output.png): ");
-            String outputName = scanner.nextLine().trim();
-            if (outputName.isEmpty()) outputName = "output.png";
-            if (!outputName.toLowerCase().endsWith(".png")) outputName += ".png";
-
-            ImageIO.scanForPlugins();
-            ImageManager.saveImage(original, outputName);
-            System.out.println("SUCCESS! Encrypted image saved as '" + outputName + "'");
-
-
-            // --- REVEAL & DECRYPTION TEST ---
-            System.out.println("\n--- Verification (Optional) ---");
-            System.out.print("Would you like to verify by extracting the file now? (y/n): ");
-            if (scanner.nextLine().trim().equalsIgnoreCase("y")) {
-                System.out.print("Enter password for decryption: ");
-                String verifyPassword = scanner.nextLine();
-                if (verifyPassword.isEmpty()) verifyPassword = "GhostProtocol123";
-
-                System.out.print("Extracting and decrypting... ");
-                BufferedImage ghostImage = ImageManager.loadImage(outputName);
-                byte[] revealed = engine.reveal(ghostImage);
-                byte[] finalDecrypted = cipher.decrypt(revealed, verifyPassword);
-
-                String restoredFileName = "Restored_file" + extension;
-                Files.write(Paths.get(restoredFileName), finalDecrypted);
-                System.out.println("Done!");
-                System.out.println("File restored to: " + restoredFileName);
-            }
-
-            System.out.println("\nThank you for using Nyx-Stegano!");
-
-        } catch (IOException e) {
-            System.err.println("\n[FILE ERROR]: " + e.getMessage());
         } catch (BadPaddingException e) {
-            System.err.println("\n[SECURITY ALERT]: Incorrect password! Decryption failed.");
+            System.err.println("\n[SECURITY ALERT]: Incorrect password or corrupted data!");
         } catch (Exception e) {
             System.err.println("\n[SYSTEM ERROR]: " + e.getMessage());
-            e.printStackTrace();
         } finally {
+            System.out.println("\nThank you for using Nyx-Stegano!");
             scanner.close();
+        }
+    }
+
+    private static void handleEncryptionFlow(Scanner scanner, SteganoProtocol engine, CipherProtocol cipher) throws Exception {
+        System.out.print("Enter path of the file to hide: ");
+        String filePathStr = scanner.nextLine().trim().replace("\"", "");
+        Path filePath = Paths.get(filePathStr);
+
+        if (!Files.exists(filePath)) {
+            throw new IOException("Secret file not found: " + filePathStr);
+        }
+
+        String fileName = filePath.getFileName().toString();
+        int lastDot = fileName.lastIndexOf(".");
+        String originalExtension = (lastDot == -1) ? "" : fileName.substring(lastDot);
+
+        byte[] fileBytes = Files.readAllBytes(filePath);
+
+        System.out.print("Enter encryption password: ");
+        String password = scanner.nextLine();
+        if (password.isEmpty()) password = "GhostProtocol123";
+
+        // Size check (incl. header and padding)
+        long requiredBits = ((long) (fileBytes.length + 32) * 8) + 32;
+
+        System.out.println("\n--- Carrier Image (Container) Selection ---");
+        System.out.println("[1] Manual path");
+        System.out.println("[2] Auto-fetch Unsplash (HD)");
+        System.out.print("Choice (1/2): ");
+        String choice = scanner.nextLine().trim();
+
+        BufferedImage carrier = null;
+        if (choice.equals("2")) {
+            carrier = UnsplashClient.fetchCarrierImage(requiredBits, "carrier_image.jpg");
+        } else {
+            System.out.print("Enter carrier image path: ");
+            String carrierPath = scanner.nextLine().trim().replace("\"", "");
+            // Use bit-preparation for the initial carrier
+            carrier = ImageManager.loadAndPrepareCarrier(carrierPath);
+        }
+
+        if (carrier == null) throw new IOException("Carrier loading failed.");
+
+        long capacityBits = (long) carrier.getWidth() * carrier.getHeight() * 3;
+        if (requiredBits > capacityBits) {
+            System.err.println("\nERROR: Carrier image is too small!");
+            System.err.println("Required: " + requiredBits + " bits | Available: " + capacityBits + " bits");
+            return;
+        }
+
+        System.out.print("Encrypting and hiding... ");
+        byte[] encrypted = cipher.encrypt(fileBytes, password);
+        engine.cloak(carrier, encrypted);
+        System.out.println("Done!");
+
+        System.out.print("Save output as (default: output.png): ");
+        String outputName = scanner.nextLine().trim();
+        if (outputName.isEmpty()) outputName = "output.png";
+        if (!outputName.toLowerCase().endsWith(".png")) outputName += ".png";
+
+        ImageManager.saveImage(carrier, outputName);
+        System.out.println("SUCCESS! Digital Ghost saved to: " + outputName);
+
+        System.out.print("\nVerify binary identity now? (y/n): ");
+        if (scanner.nextLine().trim().equalsIgnoreCase("y")) {
+            verifyBinaryIdentity(engine, cipher, outputName, password, fileBytes, originalExtension);
+        }
+    }
+
+    private static void handleDecryptionFlow(Scanner scanner, SteganoProtocol engine, CipherProtocol cipher) throws Exception {
+        System.out.println("\n--- Decryption Flow ---");
+        System.out.print("Enter Ghost image path: ");
+        String path = scanner.nextLine().trim().replace("\"", "");
+        
+        System.out.print("Enter password: ");
+        String password = scanner.nextLine();
+        if (password.isEmpty()) password = "GhostProtocol123";
+
+        System.out.print("Extracting... ");
+        // RAW load for decryption (no color management)
+        BufferedImage ghost = ImageManager.loadImage(path);
+        if (ghost == null) throw new IOException("Image not found.");
+
+        byte[] revealed = engine.reveal(ghost);
+        byte[] decrypted = cipher.decrypt(revealed, password);
+        System.out.println("Done!");
+
+        System.out.print("Save restored file as (e.g. secret.zip): ");
+        String restoredName = scanner.nextLine().trim();
+        if (restoredName.isEmpty()) restoredName = "restored_file.bin";
+
+        Files.write(Paths.get(restoredName), decrypted);
+        System.out.println("SUCCESS! File restored: " + restoredName);
+    }
+
+    private static void verifyBinaryIdentity(SteganoProtocol engine, CipherProtocol cipher, String path, String password, byte[] original, String ext) throws Exception {
+        System.out.print("Testing extraction... ");
+        BufferedImage ghost = ImageManager.loadImage(path);
+        byte[] revealed = engine.reveal(ghost);
+        byte[] decrypted = cipher.decrypt(revealed, password);
+
+        if (Arrays.equals(original, decrypted)) {
+            System.out.println("DONE!");
+            System.out.println("[IDENTITY OK]: Decrypted data is bit-for-bit IDENTICAL to original.");
+            
+            String testFile = "verify_result" + ext;
+            Files.write(Paths.get(testFile), decrypted);
+            System.out.println("[VERFIED]: Test file created: " + testFile);
+        } else {
+            System.err.println("FAILED!");
+            System.err.println("[WARNING]: Decrypted data MISMATCH! Integrity may be compromised.");
         }
     }
 
     private static void printHeader() {
         System.out.println("******************************************");
-        System.out.println("*            GHOST STEGANOGRAPHY         *");
-        System.out.println("*        Secure Data Hiding in Images    *");
+        System.out.println("*            NYX STEGANOGRAPHY           *");
+        System.out.println("*       Bit-Perfect Binary Cloaking      *");
         System.out.println("******************************************\n");
     }
 }
