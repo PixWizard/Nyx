@@ -1,0 +1,111 @@
+.root {
+    -fx-base: #121212;
+    -fx-background-color: #121212;
+    -fx-accent: #3A86FF;
+    -fx-focus-color: #3A86FF;
+}
+
+.main-container {
+    -fx-background-color: linear-gradient(to bottom right, #121212, #1a1a2e);
+}
+
+.sidebar {
+    -fx-background-color: #1a1a1a;
+    -fx-padding: 20;
+    -fx-spacing: 15;
+    -fx-border-color: #333333;
+    -fx-border-width: 0 1 0 0;
+}
+
+.sidebar-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #888888;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-padding: 10 20;
+    -fx-alignment: CENTER_LEFT;
+    -fx-cursor: hand;
+}
+
+.sidebar-button:hover {
+    -fx-text-fill: #ffffff;
+    -fx-background-color: rgba(58, 134, 255, 0.1);
+}
+
+.sidebar-button.active {
+    -fx-text-fill: #3A86FF;
+    -fx-background-color: rgba(58, 134, 255, 0.1);
+    -fx-border-color: #3A86FF;
+    -fx-border-width: 0 0 0 4;
+}
+
+.content-area {
+    -fx-padding: 30;
+}
+
+.glass-panel {
+    -fx-background-color: rgba(255, 255, 255, 0.05);
+    -fx-background-radius: 15;
+    -fx-padding: 25;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 10, 0, 0, 5);
+}
+
+.header-text {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+}
+
+.sub-header-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: #888888;
+}
+
+.action-button {
+    -fx-background-color: #3A86FF;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-padding: 12 30;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+
+.action-button:hover {
+    -fx-background-color: #4c91ff;
+    -fx-effect: dropshadow(three-pass-box, rgba(58, 134, 255, 0.3), 10, 0, 0, 0);
+}
+
+.text-field {
+    -fx-background-color: #252525;
+    -fx-text-fill: white;
+    -fx-padding: 10;
+    -fx-background-radius: 5;
+    -fx-border-color: #333333;
+    -fx-border-radius: 5;
+}
+
+.text-field:focused {
+    -fx-border-color: #3A86FF;
+}
+
+.drop-zone {
+    -fx-border-color: #444444;
+    -fx-border-width: 2;
+    -fx-border-style: dashed;
+    -fx-border-radius: 10;
+    -fx-background-color: rgba(255, 255, 255, 0.02);
+    -fx-alignment: CENTER;
+    -fx-padding: 20;
+    -fx-cursor: hand;
+}
+
+.drop-zone:hover {
+    -fx-background-color: rgba(58, 134, 255, 0.05);
+    -fx-border-color: #3A86FF;
+}
+
+.status-label {
+    -fx-text-fill: #888888;
+    -fx-font-size: 12px;
+}

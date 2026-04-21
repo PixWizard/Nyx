@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.text.Text?>
+<?import javafx.scene.image.ImageView?>
+
+<HBox fx:id="mainContainer" prefHeight="650.0" prefWidth="1000.0" 
+      stylesheets="@styles.css" styleClass="main-container"
+      xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="org.ghost.ui.MainController">
+    
+    <!-- Sidebar -->
+    <VBox prefWidth="240.0" styleClass="sidebar">
+        <Text text="GHOST" styleClass="header-text" />
+        <Text text="Secure Steganography" styleClass="status-label" />
+        
+        <Region prefHeight="40.0" />
+        
+        <Button fx:id="btnNavCloak" text="Cloak Data" onAction="#handleNavCloak" 
+                maxWidth="Infinity" styleClass="sidebar-button, active" />
+        <Button fx:id="btnNavUncloak" text="Uncloak Data" onAction="#handleNavUncloak" 
+                maxWidth="Infinity" styleClass="sidebar-button" />
+        
+        <Region fx:id="sidebarSpacer" VBox.vgrow="ALWAYS" />
+        
+        <VBox styleClass="glass-panel" style="-fx-padding: 15;">
+            <Text text="Version 1.1" styleClass="status-label" />
+            <Text text="Engine: Bit-Perfect LSB" styleClass="status-label" />
+        </VBox>
+    </VBox>
+    
+    <!-- Content Area -->
+    <StackPane fx:id="contentStack" HBox.hgrow="ALWAYS" styleClass="content-area">
+        
+        <!-- Cloak View -->
+        <VBox fx:id="cloakView" spacing="20.0" alignment="TOP_LEFT">
+            <VBox spacing="5">
+                <Text text="Cloak" styleClass="header-text" />
+                <Text text="Hide encrypted files within digital carrier images." styleClass="sub-header-text" />
+            </VBox>
+
+            <GridPane hgap="30" vgap="20">
+                <columnConstraints>
+                    <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="400.0" />
+                    <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="300.0" />
+                </columnConstraints>
+                
+                <VBox spacing="10" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label text="Step 1: Choose Secret File" styleClass="sub-header-text" />
+                    <VBox fx:id="fileDropZone" styleClass="drop-zone" prefHeight="100" onMouseClicked="#selectSecretFile">
+                        <Text fx:id="txtSecretFile" text="Click to Browse or Drop File" fill="#888888"/>
+                    </VBox>
+                </VBox>
+                
+                <VBox spacing="10" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                    <Label text="Step 2: Choose Carrier Image" styleClass="sub-header-text" />
+                    <HBox spacing="10">
+                        <VBox fx:id="imageDropZone" styleClass="drop-zone" prefHeight="100" HBox.hgrow="ALWAYS" onMouseClicked="#selectCarrierImage">
+                            <Text fx:id="txtCarrierImage" text="Click to Browse or Drop Image" fill="#888888" />
+                        </VBox>
+                        <Button text="Fetch HD" onAction="#fetchUnsplash" styleClass="action-button" prefHeight="100" minWidth="100" />
+                    </HBox>
+                </VBox>
+                
+                <VBox spacing="10" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                    <Label text="Step 3: Security &amp; Execution" styleClass="sub-header-text" />
+                    <PasswordField fx:id="pfCloakKey" promptText="Encryption Password" styleClass="text-field" />
+                    <Region prefHeight="10" />
+                    <Button text="Start Cloaking Process" onAction="#startCloaking" styleClass="action-button" maxWidth="Infinity" />
+                </VBox>
+
+                <!-- Preview Area -->
+                <VBox spacing="10" GridPane.columnIndex="1" GridPane.rowIndex="0" GridPane.rowSpan="3" alignment="TOP_CENTER">
+                   <Label text="Carrier Preview" styleClass="sub-header-text" />
+                   <StackPane styleClass="glass-panel" prefHeight="350">
+                       <ImageView fx:id="ivPreview" fitHeight="300" fitWidth="250" preserveRatio="true" />
+                       <Text fx:id="txtPreviewStatus" text="No Preview Selected" styleClass="status-label" />
+                   </StackPane>
+                </VBox>
+            </GridPane>
+            
+            <ProgressBar fx:id="pbCloak" maxWidth="Infinity" progress="0.0" visible="false" />
+        </VBox>
+
+        <!-- Uncloak View -->
+        <VBox fx:id="uncloakView" spacing="20.0" alignment="TOP_LEFT" visible="false">
+             <VBox spacing="5">
+                <Text text="Uncloak" styleClass="header-text" />
+                <Text text="Reveal and decrypt original files from Ghost images." styleClass="sub-header-text" />
+            </VBox>
+
+            <VBox spacing="10" maxWidth="600">
+                <Label text="Select Ghost Image" styleClass="sub-header-text" />
+                <VBox fx:id="ghostDropZone" styleClass="drop-zone" prefHeight="120" onMouseClicked="#selectGhostImage">
+                    <Text fx:id="txtGhostImage" text="Click to Browse or Drop Ghost Image" fill="#888888"/>
+                </VBox>
+                
+                <Region prefHeight="10" />
+                
+                <Label text="Decryption Password" styleClass="sub-header-text" />
+                <PasswordField fx:id="pfUncloakKey" promptText="Password" styleClass="text-field" />
+                
+                <Region prefHeight="20" />
+                <Button text="Extract &amp; Decrypt File" onAction="#startUncloaking" styleClass="action-button" maxWidth="Infinity" />
+            </VBox>
+            
+            <VBox fx:id="uncloakStatusBox" styleClass="glass-panel" visible="false">
+                 <Text fx:id="txtUncloakResult" text="Ready to extract..." styleClass="header-text" style="-fx-font-size: 16;"/>
+                 <Text fx:id="txtUncloakDetail" text="" styleClass="status-label" />
+            </VBox>
+        </VBox>
+
+    </StackPane>
+</HBox>
