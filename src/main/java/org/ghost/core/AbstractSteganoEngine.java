@@ -15,6 +15,4 @@ public abstract class AbstractSteganoEngine implements SteganoProtocol {
 
     }
 
-    public abstract int getBitsPerPixel();
-
 }
