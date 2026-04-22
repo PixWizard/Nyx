@@ -1,7 +1,8 @@
 module org.ghost {
     requires javafx.controls;
     requires javafx.fxml;
-    requires java.desktop;
+    requires transitive java.desktop;
+    requires java.net.http;
 
     opens org.ghost.ui to javafx.fxml;
 

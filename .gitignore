@@ -9,6 +9,8 @@ target/
 *.pdf
 *.mp3
 *.txt
+*.pkt
+*.css
 
 # Ignore IDE settings
 .idea/

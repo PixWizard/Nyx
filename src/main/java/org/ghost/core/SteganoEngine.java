@@ -3,12 +3,7 @@ package org.ghost.core;
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
 
-public class SteganoEngine extends AbstractSteganoEngine{
-
-    @Override
-    public int getBitsPerPixel() {
-        return 3; //For providing the Bit hiding logic.
-    }
+public class SteganoEngine extends AbstractSteganoEngine {
 
     //  HIDING OF THE DATA -->
     @Override
@@ -85,9 +80,7 @@ public class SteganoEngine extends AbstractSteganoEngine{
 
         int[] shifts = {16,8,0}; //For accessing the bitVal's of RGB.
 
-        int[] pixelBuffer = new int[height * width];
-        //Loading the whole data into the matrix.
-        image.getRGB(0, 0, width, height, pixelBuffer, 0, width);
+        int[] pixelBuffer = getImage(image);
 
 //      Loop for getting the header and traversing the bits of the actual data.
         for(int i=0; i<pixelBuffer.length; ++i) {
