@@ -11,14 +11,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.imageio.ImageIO;
 
-/**
- * Utility class to interact with the Unsplash API to fetch carrier images.
- */
 public class UnsplashClient {
 
     // IMPORTANT: Replace this with your actual Unsplash Access Key
     // Register at https://unsplash.com/developers
-    private static final String ACCESS_KEY = "owFzNh9-AULGPkRR81p2AMD3Mrxxx5nfX3MRdQQz814";
+    private static final String ACCESS_KEY = "YOUR_ACCESS_KEY";
 
     private static final HttpClient client = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NORMAL)

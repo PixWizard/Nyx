@@ -36,11 +36,12 @@ public class Main {
 
     public static void main(String[] args) {
 
+        //Creating objects for the required classes
         Scanner scanner = new Scanner(System.in);
         SteganoProtocol engine = new SteganoEngine();
         AbstractCipher cipher = new XORCipher();
 
-        printHeader();
+        printHeader(); //Main title header.
 
         System.out.println("Select Operation Mode:");
         System.out.println("[1] Encrypt & Hide (Cloak)");
@@ -67,6 +68,7 @@ public class Main {
     }
 
     private static void handleEncryptionFlow(Scanner scanner, SteganoProtocol engine, AbstractCipher cipher) throws Exception {
+
         System.out.print("Enter path of the file to hide: ");
         String filePathStr = scanner.nextLine().trim().replace("\"", "");
         Path filePath = Paths.get(filePathStr);
@@ -100,7 +102,7 @@ public class Main {
         if (choice.equals("2")) {
             carrier = UnsplashClient.fetchCarrierImage(requiredBits, "carrier_image.jpg");
         } else {
-            System.out.print("Enter carrier image path: ");
+            System.out.print("Enter carrier image path ( Size <~ 90 mb ): ");
             String carrierPath = scanner.nextLine().trim().replace("\"", "");
             // Use bit-preparation for the initial carrier
             carrier = ImageManager.loadAndPrepareCarrier(carrierPath);
@@ -200,6 +202,5 @@ public class Main {
     }
 
     private record UnpackedData(byte[] data, String extension) {}
-
 
 }
