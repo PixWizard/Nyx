@@ -12,6 +12,8 @@ target/
 *.pkt
 *.css
 
+Testing assets/
+
 # Ignore IDE settings
 .idea/
 *.iml
