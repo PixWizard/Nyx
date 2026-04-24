@@ -69,7 +69,7 @@ public class Main {
 
     private static void handleEncryptionFlow(Scanner scanner, SteganoProtocol engine, AbstractCipher cipher) throws Exception {
 
-        System.out.print("Enter path of the file to hide: ");
+        System.out.print("Enter path of the file to hide ( Size <~ 90 mb ): ");
         String filePathStr = scanner.nextLine().trim().replace("\"", "");
         Path filePath = Paths.get(filePathStr);
 
@@ -102,7 +102,7 @@ public class Main {
         if (choice.equals("2")) {
             carrier = UnsplashClient.fetchCarrierImage(requiredBits, "carrier_image.jpg");
         } else {
-            System.out.print("Enter carrier image path ( Size <~ 90 mb ): ");
+            System.out.print("Enter carrier image path : ");
             String carrierPath = scanner.nextLine().trim().replace("\"", "");
             // Use bit-preparation for the initial carrier
             carrier = ImageManager.loadAndPrepareCarrier(carrierPath);
@@ -129,8 +129,9 @@ public class Main {
         String outputName = scanner.nextLine().trim();
         if (outputName.isEmpty()) outputName = "output.png";
         if (!outputName.toLowerCase().endsWith(".png")) outputName += ".png";
-
+//
         ImageManager.saveImage(carrier, outputName);
+
         System.out.println("SUCCESS! Digital Ghost saved to: " + outputName);
     }
 
@@ -170,6 +171,7 @@ public class Main {
         }
 
         Files.write(Paths.get(restoredName), finalFileData);
+
         System.out.println("SUCCESS! File restored as: " + restoredName);
     }
 
