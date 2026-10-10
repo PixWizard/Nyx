@@ -1,28 +1,28 @@
 package org.ghost;
 
-//Brain
+import org.ghost.core.EnvelopeHeader;
+import org.ghost.core.InsufficientCarrierCapacityException;
+import org.ghost.core.InvalidHeaderException;
+import org.ghost.core.NoNyxPayloadException;
+import org.ghost.core.PayloadEnvelope;
+import org.ghost.core.SequentialLayout;
 import org.ghost.core.SteganoEngine;
-import org.ghost.core.SteganoProtocol;
-
-//Encryption and Decryption
-import org.ghost.crypto.AbstractCipher;
-import org.ghost.crypto.XORCipher;
-
-//Image manager.
-import java.awt.image.BufferedImage;
+import org.ghost.core.UnsupportedFormatException;
+import org.ghost.crypto.AuthenticatedCipher;
+import org.ghost.crypto.AuthenticationFailedException;
 import org.ghost.utils.ImageManager;
 import org.ghost.utils.UnsplashClient;
 
-//Error handling
-import javax.crypto.BadPaddingException;
+import java.awt.image.BufferedImage;
+import java.io.Console;
 import java.io.IOException;
-
-//File tools
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-//Java Utils
+import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.Scanner;
 
 public class Main {
@@ -35,12 +35,25 @@ public class Main {
     }
 
     public static void main(String[] args) {
+        boolean scatter = true;
+        boolean adaptive = true;
+        if (args != null) {
+            for (String arg : args) {
+                if ("--no-scatter".equalsIgnoreCase(arg.trim())) {
+                    scatter = false;
+                }
+                if ("--no-adaptive".equalsIgnoreCase(arg.trim())) {
+                    adaptive = false;
+                }
+            }
+        }
 
         Scanner scanner = new Scanner(System.in);
-        SteganoProtocol engine = new SteganoEngine();
-        AbstractCipher cipher = new XORCipher();
+        SteganoEngine engine = new SteganoEngine();
 
         printHeader();
+        System.out.println("Embedding Mode: " + (scatter ? "Key-Driven Scattered (default)" : "Sequential (--no-scatter)") +
+                " | Depth: " + (adaptive ? "Sobel Adaptive (default)" : "Constant Depth 1 (--no-adaptive)"));
 
         System.out.println("Select Operation Mode:");
         System.out.println("[1] Encrypt & Hide (Cloak)");
@@ -50,14 +63,16 @@ public class Main {
 
         try {
             if (mode.equals("1")) {
-                handleEncryptionFlow(scanner, engine, cipher);
+                handleEncryptionFlow(scanner, engine, scatter, adaptive);
             } else if (mode.equals("2")) {
-                handleDecryptionFlow(scanner, engine, cipher);
+                handleDecryptionFlow(scanner, engine);
             } else {
                 System.out.println("Invalid selection. Exiting...");
             }
-        } catch (BadPaddingException e) {
-            System.err.println("\n[SECURITY ALERT]: Incorrect password or corrupted data!");
+        } catch (AuthenticationFailedException e) {
+            System.err.println("\n[SECURITY ALERT]: " + e.getMessage());
+        } catch (NoNyxPayloadException | InvalidHeaderException | UnsupportedFormatException | InsufficientCarrierCapacityException e) {
+            System.err.println("\n[STEGANOGRAPHY ERROR]: " + e.getMessage());
         } catch (Exception e) {
             System.err.println("\n[SYSTEM ERROR]: " + e.getMessage());
         } finally {
@@ -66,7 +81,23 @@ public class Main {
         }
     }
 
-    private static void handleEncryptionFlow(Scanner scanner, SteganoProtocol engine, AbstractCipher cipher) throws Exception {
+    private static char[] readPassword() {
+        Console console = System.console();
+        if (console != null) {
+            System.out.print("Enter password: ");
+            char[] pwd = console.readPassword();
+            if (pwd != null && pwd.length > 0) {
+                return pwd;
+            }
+        }
+        String envPwd = System.getenv("NYX_PASSWORD");
+        if (envPwd != null && !envPwd.isEmpty()) {
+            return envPwd.toCharArray();
+        }
+        throw new IllegalStateException("Password required: please run in an interactive console or set the NYX_PASSWORD environment variable.");
+    }
+
+    private static void handleEncryptionFlow(Scanner scanner, SteganoEngine engine, boolean scatter, boolean adaptive) throws Exception {
         System.out.print("Enter path of the file to hide: ");
         String filePathStr = scanner.nextLine().trim().replace("\"", "");
         Path filePath = Paths.get(filePathStr);
@@ -77,129 +108,123 @@ public class Main {
 
         String fileName = filePath.getFileName().toString();
         int lastDot = fileName.lastIndexOf(".");
-        String originalExtension = (lastDot == -1) ? "" : fileName.substring(lastDot);
+        String originalExtension = (lastDot == -1) ? "" : fileName.substring(lastDot + 1);
 
         byte[] fileBytes = Files.readAllBytes(filePath);
 
-        System.out.print("Enter encryption password: ");
-        String password = scanner.nextLine();
-        if (password.isEmpty()) password = "GhostProtocol123";
+        char[] password = readPassword();
 
-        byte[] packedData = packData(fileBytes, originalExtension);
-        
-        // Size check (incl. header and padding)
-        long requiredBits = ((long) (packedData.length + 4) * 8);
+        try {
+            byte[] extBytes = originalExtension.getBytes(StandardCharsets.US_ASCII);
+            long ciphertextBytes = 1L + extBytes.length + fileBytes.length + AuthenticatedCipher.GCM_TAG_LENGTH_BYTES;
+            long requiredBits = ((long) SequentialLayout.HEADER_PIXELS * 3L) + (ciphertextBytes * 8L);
 
-        System.out.println("\n--- Carrier Image (Container) Selection ---");
-        System.out.println("[1] Manual path");
-        System.out.println("[2] Auto-fetch Unsplash (HD)");
-        System.out.print("Choice (1/2): ");
-        String choice = scanner.nextLine().trim();
+            System.out.println("\n--- Carrier Image (Container) Selection ---");
+            System.out.println("[1] Manual path");
+            System.out.println("[2] Auto-fetch Unsplash (HD)");
+            System.out.print("Choice (1/2): ");
+            String choice = scanner.nextLine().trim();
 
-        BufferedImage carrier = null;
-        if (choice.equals("2")) {
-            carrier = UnsplashClient.fetchCarrierImage(requiredBits, "carrier_image.jpg");
-        } else {
-            System.out.print("Enter carrier image path: ");
-            String carrierPath = scanner.nextLine().trim().replace("\"", "");
-            // Use bit-preparation for the initial carrier
-            carrier = ImageManager.loadAndPrepareCarrier(carrierPath);
+            BufferedImage carrier;
+            if (choice.equals("2")) {
+                try {
+                    carrier = UnsplashClient.fetchCarrierImage(requiredBits, "carrier_image.jpg");
+                } catch (IllegalStateException e) {
+                    System.err.println("\n[CONFIGURATION ERROR]: " + e.getMessage());
+                    return;
+                }
+            } else {
+                System.out.print("Enter carrier image path: ");
+                String carrierPath = scanner.nextLine().trim().replace("\"", "");
+                carrier = ImageManager.loadAndPrepareCarrier(carrierPath);
+            }
+
+            if (carrier == null) throw new IOException("Carrier loading failed.");
+
+            System.out.println("Deriving key, this can take a few seconds...");
+            System.out.print("Encrypting and cloaking... ");
+            carrier = engine.cloak(carrier, fileBytes, originalExtension, password, scatter, adaptive);
+            System.out.println("Done!");
+
+            System.out.print("Save output as (default: output.png): ");
+            String outputName = scanner.nextLine().trim();
+            if (outputName.isEmpty()) {
+                outputName = "output.png";
+            } else {
+                String lower = outputName.toLowerCase();
+                if (lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp") || lower.endsWith(".gif")) {
+                    int outDot = outputName.lastIndexOf('.');
+                    String base = outputName.substring(0, outDot);
+                    outputName = base + ".png";
+                    System.out.println("Notice: Stego carrier must be a lossless PNG container. Forcing extension to .png: " + outputName);
+                } else if (!lower.endsWith(".png")) {
+                    outputName += ".png";
+                    System.out.println("Notice: Appending required lossless PNG extension: " + outputName);
+                }
+            }
+
+            ImageManager.saveImage(carrier, outputName);
+            long outputSize = Files.size(Paths.get(outputName));
+            System.out.printf("SUCCESS! Digital Ghost saved to: %s (%d bytes)%n", outputName, outputSize);
+        } finally {
+            Arrays.fill(password, (char) 0);
         }
-
-        if (carrier == null) throw new IOException("Carrier loading failed.");
-
-        //Capacity check.
-        long capacityBits = (long) carrier.getWidth() * carrier.getHeight() * 3;
-
-        if (requiredBits > capacityBits) {
-            System.err.println("\nERROR: Carrier image is too small!");
-            System.err.println("Required: " + requiredBits + " bits | Available: " + capacityBits + " bits");
-            return;
-        }
-
-        System.out.print("Encrypting and hiding... ");
-        
-        byte[] encrypted = cipher.encrypt(packedData, password);
-        engine.cloak(carrier, encrypted);
-        System.out.println("Done!");
-
-        System.out.print("Save output as (default: output.png): ");
-        String outputName = scanner.nextLine().trim();
-        if (outputName.isEmpty()) outputName = "output.png";
-        if (!outputName.toLowerCase().endsWith(".png")) outputName += ".png";
-
-        ImageManager.saveImage(carrier, outputName);
-        System.out.println("SUCCESS! Digital Ghost saved to: " + outputName);
     }
 
-    private static void handleDecryptionFlow(Scanner scanner, SteganoProtocol engine, AbstractCipher cipher) throws Exception {
+    private static void handleDecryptionFlow(Scanner scanner, SteganoEngine engine) throws Exception {
         System.out.println("\n--- Decryption Flow ---");
         System.out.print("Enter Ghost image path: ");
         String path = scanner.nextLine().trim().replace("\"", "");
-        
-        System.out.print("Enter password: ");
-        String password = scanner.nextLine();
-        if (password.isEmpty()) password = "GhostProtocol123";
 
-        System.out.print("Extracting... ");
-        // RAW load for decryption (no color management)
-        BufferedImage ghost = ImageManager.loadImage(path);
-        if (ghost == null) throw new IOException("Image not found.");
+        char[] password = readPassword();
 
-        byte[] revealed = engine.reveal(ghost);
-        byte[] decrypted = cipher.decrypt(revealed, password);
-        
-        // --- UNPACK DATA ---
-        UnpackedData unpacked = unpackData(decrypted);
-        byte[] finalFileData = unpacked.data();
-        String detectedExt = unpacked.extension();
+        try {
+            BufferedImage ghost = ImageManager.loadImage(path);
+            if (ghost == null) throw new IOException("Image not found: " + path);
 
-        System.out.println("Done!");
+            System.out.println("Deriving key, this can take a few seconds...");
+            System.out.print("Extracting and decrypting... ");
+            PayloadEnvelope.Unpacked unpacked = engine.reveal(ghost, password);
+            byte[] finalFileData = unpacked.fileBytes();
+            String detectedExt = unpacked.extension();
 
-        // Ensure the restored filename has the correct extension
-        System.out.print("Save restored file as (extension will be added automatically): ");
-        String restoredName = scanner.nextLine().trim();
-        
-        if (restoredName.isEmpty()) restoredName = "restored_file";
-        
-        // Append extension if not already present
-        if (!detectedExt.isEmpty() && !restoredName.toLowerCase().endsWith(detectedExt.toLowerCase())) {
-            restoredName += detectedExt;
-        }
+            System.out.println("Done!");
 
-        Files.write(Paths.get(restoredName), finalFileData);
-        System.out.println("SUCCESS! File restored as: " + restoredName);
-    }
+            System.out.print("Save restored file as (extension will be added automatically): ");
+            String restoredName = scanner.nextLine().trim();
+            if (restoredName.isEmpty()) restoredName = "restored_file";
 
-
-    // --- METADATA HELPERS ---
-
-    private static byte[] packData(byte[] fileData, String extension) {
-        byte[] extBytes = extension.getBytes();
-        int extLen = extBytes.length;
-        
-        byte[] packed = new byte[1 + extLen + fileData.length];
-        packed[0] = (byte) extLen;
-        System.arraycopy(extBytes, 0, packed, 1, extLen);
-        System.arraycopy(fileData, 0, packed, 1 + extLen, fileData.length);
-        
-        return packed;
-    }
-
-    private static UnpackedData unpackData(byte[] decrypted) {
-        if (decrypted.length > 1) {
-            int extLen = decrypted[0] & 0xFF; // handle unsigned
-            if (decrypted.length >= 1 + extLen) {
-                String ext = new String(decrypted, 1, extLen);
-                byte[] data = new byte[decrypted.length - 1 - extLen];
-                System.arraycopy(decrypted, 1 + extLen, data, 0, data.length);
-                return new UnpackedData(data, ext);
+            if (!detectedExt.isEmpty() && !restoredName.toLowerCase().endsWith("." + detectedExt.toLowerCase())) {
+                restoredName += "." + detectedExt;
             }
+
+            Path targetPath = Paths.get(restoredName);
+            if (Files.exists(targetPath) && System.console() != null) {
+                System.out.print("File '" + targetPath + "' already exists. Overwrite? (y/N): ");
+                String confirm = scanner.nextLine().trim();
+                if (!confirm.equalsIgnoreCase("y") && !confirm.equalsIgnoreCase("yes")) {
+                    System.out.println("Aborting restore to avoid overwriting existing file.");
+                    return;
+                }
+            }
+
+            Path parentDir = targetPath.getParent();
+            if (parentDir == null) parentDir = Paths.get(".");
+            Path tempFile = Files.createTempFile(parentDir, ".nyx_tmp_", ".tmp");
+            try {
+                Files.write(tempFile, finalFileData);
+                try {
+                    Files.move(tempFile, targetPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                } catch (AtomicMoveNotSupportedException e) {
+                    Files.move(tempFile, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                }
+            } finally {
+                Files.deleteIfExists(tempFile);
+            }
+
+            System.out.println("SUCCESS! File restored as: " + targetPath + " (" + finalFileData.length + " bytes)");
+        } finally {
+            Arrays.fill(password, (char) 0);
         }
-        return new UnpackedData(decrypted, ".bin");
     }
-
-    private record UnpackedData(byte[] data, String extension) {}
-
-
 }

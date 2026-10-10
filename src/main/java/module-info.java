@@ -3,6 +3,7 @@ module org.ghost {
     requires javafx.fxml;
     requires transitive java.desktop;
     requires java.net.http;
+    requires org.bouncycastle.provider;
 
     opens org.ghost.ui to javafx.fxml;
 

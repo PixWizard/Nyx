@@ -1,53 +1,101 @@
+# ==================================================
+# Build & Package Output
+# ==================================================
 target/
+build/
+out/
+dist/
+*.class
+*.jar
+*.war
+*.ear
+hs_err_pid*
+replay_pid*
+*.log
 !.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
-.kotlin
-# Ignore all PNG images (test inputs and outputs)
-*.png
-*.jpg
-*.pdf
-*.mp3
-*.txt
-*.pkt
-*.css
 
-# Ignore IDE settings
+# ==================================================
+# IDE & Editor Settings
+# ==================================================
 .idea/
 *.iml
-
-# Ignore compiled Java classes
-
-### IntelliJ IDEA ###
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
 *.iws
-*.iml
 *.ipr
-
-### Eclipse ###
-.apt_generated
+.vscode/
 .classpath
-.factorypath
 .project
-.settings
+.settings/
+.factorypath
+.apt_generated
 .springBeans
 .sts4-cache
+nbproject/
+nbbuild/
+nbdist/
+.nb-gradle/
+.kotlin
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
-.vscode/
-
-### Mac OS ###
+# ==================================================
+# Operating System Junk
+# ==================================================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# ==================================================
+# Agent/AI Tooling & Scratch Files
+# ==================================================
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.agents/
+.claude/
+.cursor/
+.cursorrules
+.windsurf*
+.aider*
+.continue/
+.codex/
+.gemini/
+.kiro/
+.clinerules
+.roo*
+.github/copilot-instructions.md
+*.prompt.md
+implementation_plan.md
+task.md
+walkthrough.md
+
+# ==================================================
+# Generated Test & Evaluation Artifacts
+# ==================================================
+*.png
+*.jpg
+*.jpeg
+*.pdf
+*.zip
+*.bin
+*.pkt
+output*
+carrier_image*
+stego_*
+restored_*
+
+# ==================================================
+# Whitelist Core Files & Resources
+# ==================================================
+!src/**
+!pom.xml
+!README.md
+!LICENSE*
+!docs/**
+!.gitattributes
+!.github/**
+!.mvn/
+!mvnw
+!mvnw.cmd

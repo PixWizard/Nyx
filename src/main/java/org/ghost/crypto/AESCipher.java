@@ -6,15 +6,15 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Arrays;
 
+@Deprecated
 public class AESCipher extends AbstractCipher {
 
-    // Helper method to generate the AES key from your password
     private SecretKeySpec getKey(String myKey) throws Exception {
         byte[] key = myKey.getBytes(StandardCharsets.UTF_8);
         MessageDigest sha = MessageDigest.getInstance("SHA-256");
         key = sha.digest(key);
-        key = Arrays.copyOf(key, 16); // Use first 128 bits for AES-128.
-        return new SecretKeySpec(key, "AES"); // Necessary for giving the key its identity.
+        key = Arrays.copyOf(key, 16); // 128-bit key for AES-128
+        return new SecretKeySpec(key, "AES");
     }
 
     @Override

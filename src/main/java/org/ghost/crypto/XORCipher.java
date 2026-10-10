@@ -1,5 +1,6 @@
 package org.ghost.crypto;
 
+@Deprecated
 public class XORCipher extends AbstractCipher {
 
     @Override
@@ -11,7 +12,6 @@ public class XORCipher extends AbstractCipher {
         byte[] result = new byte[data.length];
         byte[] key = password.getBytes();
 
-        // Perform the XOR operation byte by byte
         for (int i = 0; i < data.length; i++) {
             result[i] = (byte) (data[i] ^ key[i % key.length]);
         }
@@ -21,8 +21,7 @@ public class XORCipher extends AbstractCipher {
 
     @Override
     public byte[] decrypt(byte[] data, String password) {
-        // The beauty of XOR is that the operation is symmetric.
-        // Running XOR again with the same key reverses the process.
+        // Symmetric cipher: encryption and decryption are identical operations.
         return encrypt(data, password);
     }
 }

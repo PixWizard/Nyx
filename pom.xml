@@ -7,6 +7,29 @@
     <groupId>org.ghost</groupId>
     <artifactId>nyx-stegano</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <name>nyx-stegano</name>
+    <description>Cryptographically authenticated, edge-adaptive image steganography tool in Java 21.</description>
+    <url>https://github.com/PixWizard/Nyx</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>PixWizard</name>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/PixWizard/Nyx.git</connection>
+        <developerConnection>scm:git:ssh://github.com:PixWizard/Nyx.git</developerConnection>
+        <url>https://github.com/PixWizard/Nyx</url>
+    </scm>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
@@ -25,6 +48,12 @@
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.78.1</version>
         </dependency>
 
         <dependency>

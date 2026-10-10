@@ -1,8 +1,7 @@
 package org.ghost.ui;
 
 /**
- * This is a temporary placeholder to satisfy the module-info requirements.
- * We will replace this with real JavaFX code later!
+ * UI entry point placeholder for JavaFX module configuration.
  */
 public class MainApp {
     public void displayMessage() {

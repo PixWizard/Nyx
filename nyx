@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -e
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+JAR="$DIR/target/nyx-stegano-1.0-SNAPSHOT.jar"
+LIB="$DIR/target/lib"
+
+if [ ! -f "$JAR" ] || [ ! -d "$LIB" ]; then
+    echo "[*] Nyx binary or dependencies not found. Building project..."
+    mvn package dependency:copy-dependencies -DoutputDirectory=target/lib -DskipTests
+fi
+
+SEP=":"
+case "$(uname -s 2>/dev/null)" in
+    CYGWIN*|MINGW*|MSYS*) SEP=";" ;;
+esac
+
+java --module-path "$JAR${SEP}$LIB" -m org.ghost/org.ghost.Main "$@"
